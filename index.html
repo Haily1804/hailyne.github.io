@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hello</title>
+  
+  <!-- Google font mềm mại nữ tính -->
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Reset cơ bản */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #ffe6f0; /* màu hồng pastel nhạt */
+      font-family: 'Comfortaa', cursive, sans-serif;
+      color: #6a1b4d;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 0px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+	  margin-top: 20px;
+      font-weight: 600;
+      font-size: 2rem;
+      text-align: center;
+      color: #b93f6b;
+    }
+
+    #editor {
+      width: 100%;
+      max-width: 1450px;
+      height: 900px;
+      background: #fff0f6;
+      border: 2px solid #f8bbd0;
+      border-radius: 15px;
+      padding: 20px;
+      font-size: 14px;
+      color: #4a004e;
+      box-shadow: 0 4px 12px rgba(219, 112, 147, 0.3);
+      outline: none;
+      overflow-y: auto;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+    }
+    #editor:focus {
+      border-color: #ec407a;
+      box-shadow: 0 0 8px 2px #f48fb1;
+    }
+
+    #status {
+      margin-top: 5px;
+	  margin-bottom: 3px;
+      font-style: italic;
+      color: #ad1457;
+      min-height: 22px;
+      text-align: center;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+
+    /* Responsive cho điện thoại */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px 10px;
+      }
+      #editor {
+        height: 600px;
+        font-size: 15px;
+        padding: 15px;
+      }
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>🧸 Mai Hải Lý 🧸</h2>
+  <div id="secret-line" style="display: none; margin: 3px 0; text-align: center; font-size: 14px; margin-top: 0px; margin-bottom: 5px;">
+  <div style="margin-bottom: 5px;">
+    <a href="https://docs.google.com/document/d/1pAIbmT3MGtqHufTUhpxLjRZtD-TAcaaiMFOx8sBAr7o/edit?tab=t.0" target="_blank" style="color: #d81b60; font-weight: bold; text-decoration: none;">
+       Link Doc nè 
+    </a>
+  </div>
+    <div>
+    <a href="https://drive.google.com/drive/folders/1iogoIHCHPtZNwClehNV4xmeFDcOwJ-SG" target="_blank" style="color: #d81b60; font-weight: bold; text-decoration: none;">
+       Link GG Drive nè
+    </a>
+   </div>
+   </div>
+
+
+  <div id="password-box" style="margin-bottom: 15px; text-align: center;">
+      <input type="password" id="password-input" placeholder="Nhập mật khẩu để xem" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc;" />
+      <button onclick="checkPassword()" style="padding: 5px 10px; margin-left: 5px; border-radius: 5px; background-color: #ec407a; color: white; border: none;">Xác nhận</button>
+  </div>
+
+  <div id="status">Đang tải dữ liệu...</div>
+  <div id="editor" contenteditable="true" spellcheck="true" aria-label="Ô nhập ghi chú"></div>
+
+  <!-- Firebase SDK (compat để dễ dùng với file HTML) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Thay bằng config Firebase của bạn lấy từ Firebase Console nhé!
+    const firebaseConfig = {
+      apiKey: "AIzaSyClQYXipNA3AHHgyyXzX17_WrHxEvmGaEQ",
+      authDomain: "hailyne.firebaseapp.com",
+      projectId: "hailyne",
+      storageBucket: "hailyne.firebasestorage.app",
+      messagingSenderId: "1061846186715",
+      appId: "1:1061846186715:web:3180b063799e792a88aafe"
+    };
+
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const editor = document.getElementById('editor');
+    const status = document.getElementById('status');
+    const docRef = db.collection('notes').doc('myNote');
+	
+
+    // Load dữ liệu đã lưu lên ô nhập liệu
+    docRef.get().then(doc => {
+      if(doc.exists) {
+        editor.innerHTML = doc.data().content;
+        status.textContent = 'Nội dung đã được tải';
+      } else {
+        status.textContent = 'Chưa có nội dung lưu, hãy bắt đầu ghi chú nhé!';
+      }
+    }).catch(err => {
+      status.textContent = 'Lỗi tải dữ liệu, vui lòng thử lại.';
+      console.error(err);
+    });
+
+    // Tự động lưu sau 1 giây dừng gõ
+    let timer;
+    editor.addEventListener('input', () => {
+      status.textContent = 'Đang chờ lưu... 💾';
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        docRef.set({ content: editor.innerHTML })
+          .then(() => {
+            status.textContent = 'Đã lưu thành công! 🌸';
+          })
+          .catch(err => {
+            status.textContent = 'Lỗi khi lưu dữ liệu.';
+            console.error(err);
+          });
+      }, 1000);	  
+    });
+	
+	  function checkPassword() {
+      const input = document.getElementById('password-input').value;
+      const secretDiv = document.getElementById('secret-line');
+
+     // Thay 'matkhaucuaban' bằng mật khẩu thật bạn muốn
+     if (input === 'haily000') {
+       secretDiv.style.display = 'block';
+     } else {
+       alert('Sai mật khẩu!');
+     }
+     }
+  </script>
+</body>
+</html>
